@@ -1,0 +1,52 @@
+import React, { useState } from 'react';
+import { useLocation } from 'react-router-dom';
+import Header from './Header';
+import Sidebar from './Sidebar';
+
+const Layout = ({ children }) => {
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const location = useLocation();
+
+  // Mapeo de rutas a títulos
+  const getPageTitle = () => {
+    const path = location.pathname;
+    if (path === '/') return 'Dashboard';
+    if (path === '/contracts') return 'Contratos';
+    if (path === '/alerts') return 'Alertas';
+    if (path === '/reports') return 'Reportes';
+    if (path === '/chat') return 'Chat IA';
+    // Para rutas dinámicas como /contract/:id
+    if (path.startsWith('/contract/')) return 'Detalle de Contrato';
+    return 'GobIA Auditor';
+  };
+
+  const pageTitle = getPageTitle();
+
+  return (
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <Header onMenuClick={() => setSidebarCollapsed(!sidebarCollapsed)} sidebarCollapsed={sidebarCollapsed} />
+      <div className="flex">
+        <Sidebar collapsed={sidebarCollapsed} />
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-auto transition-all duration-200">
+          {/* Encabezado de página con título */}
+          <div className="mb-6">
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-800 dark:text-white tracking-tight">
+              {pageTitle}
+            </h1>
+            <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
+              {pageTitle === 'Dashboard' && 'Visión general de riesgos y alertas'}
+              {pageTitle === 'Contratos' && 'Gestión y análisis de contratos públicos'}
+              {pageTitle === 'Alertas' && 'Monitorización de anomalías en tiempo real'}
+              {pageTitle === 'Reportes' && 'Generación de informes ejecutivos'}
+              {pageTitle === 'Chat IA' && 'Asistente inteligente para consultas'}
+              {pageTitle === 'Detalle de Contrato' && 'Información completa del proceso'}
+            </p>
+          </div>
+          {children}
+        </main>
+      </div>
+    </div>
+  );
+};
+
+export default Layout;

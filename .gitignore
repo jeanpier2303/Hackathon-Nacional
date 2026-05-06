@@ -1,7 +1,7 @@
 # Entorno virtual
 venv/
 env/
-
+.env
 # Python
 __pycache__/
 *.pyc
@@ -15,3 +15,5 @@ __pycache__/
 # Archivos del sistema
 .DS_Store
 Thumbs.db
+
+node_modules/
