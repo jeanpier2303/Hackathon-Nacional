@@ -31,7 +31,7 @@ def get_contracts(limit=100):
             "valor_del_contrato": c.get("valor_del_contrato"),
             "descripcion_del_proceso": c.get("descripcion_del_proceso"),
             "modalidad_de_contratacion": c.get("modalidad_de_contratacion"),
-            "url_proceso": c.get("urlproceso", {}).get("url")  # 🔥 clave
+            "url_proceso": c.get("urlproceso", {}).get("url")  #  clave
         })
 
     return contratos_limpios

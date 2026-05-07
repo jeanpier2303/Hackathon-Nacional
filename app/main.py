@@ -7,15 +7,9 @@ from app.services.ai_service import analizar_contrato, analizar_texto
 from app.services.pdf_service import extraer_texto_pdf
 from app.services.pdf_service import extraer_datos_inteligentes
 from fastapi.middleware.cors import CORSMiddleware
-
-from app.services.n8n_service import (
-    analizar_contrato_n8n
-)
-
-from app.services.database_service import (
-    guardar_analisis_completo
-)
-
+from app.routers.import_routes import router as import_router
+from app.routers.contracts_router import router as contracts_router
+from app.routers.import_routes import router as import_router
 
 # chat service
 from app.services.chat_service import (
@@ -25,6 +19,11 @@ from app.services.chat_service import (
 )
 
 app = FastAPI()
+
+app.include_router(import_router)
+app.include_router(contracts_router)
+app.include_router(import_router)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -137,66 +136,3 @@ def chat(data: ChatRequest):
         "pregunta": data.pregunta,
         "respuesta": respuesta
     }
-
-@app.post("/analizar-y-guardar/{contrato_id}")
-def analizar_y_guardar(contrato_id: str):
-
-    try:
-
-        contratos = get_contracts(100)
-
-        contrato_encontrado = None
-
-        for contrato in contratos:
-
-            if (
-                contrato.get("id_contrato")
-                == contrato_id
-            ):
-
-                contrato_encontrado = contrato
-                break
-
-        if not contrato_encontrado:
-
-            raise HTTPException(
-                status_code=404,
-                detail="Contrato no encontrado"
-            )
-
-        print("\n========== CONTRATO ==========")
-        print(contrato_encontrado)
-
-        respuesta_n8n = analizar_contrato_n8n(
-            contrato_id
-        )
-
-        print("\n========== RESPUESTA N8N ==========")
-        print(respuesta_n8n)
-
-        resultado_guardado = (
-            guardar_analisis_completo(
-                contrato_encontrado,
-                respuesta_n8n
-            )
-        )
-
-        print("\n========== MYSQL ==========")
-        print(resultado_guardado)
-
-        return {
-            "success": True,
-            "contrato": contrato_id,
-            "n8n": respuesta_n8n,
-            "mysql": resultado_guardado
-        }
-
-    except Exception as e:
-
-        print("\n========== ERROR ==========")
-        print(str(e))
-
-        raise HTTPException(
-            status_code=500,
-            detail=str(e)
-        )

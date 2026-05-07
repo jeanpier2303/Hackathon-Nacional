@@ -8,12 +8,17 @@ import { TableSkeleton } from '../components/common/Skeleton';
 const Contracts = () => {
   const [filters, setFilters] = useState({ page: 1, limit: 10 });
   const [globalFilter, setGlobalFilter] = useState('');
-  const { contracts, pagination, loading, error, refetch } = useContracts(filters);
+  const { contracts, pagination, loading, error } = useContracts(filters);
 
   const handleFilterApply = useCallback((newFilters) => {
-    setFilters(prev => ({ ...prev, ...newFilters, page: 1 }));
-    refetch();
-  }, [refetch]);
+
+    setFilters(prev => ({
+      ...prev,
+      ...newFilters,
+      page: 1
+    }));
+
+  }, []);
 
   const handlePageChange = (newPage) => {
     setFilters(prev => ({ ...prev, page: newPage }));

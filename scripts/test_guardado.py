@@ -4,47 +4,46 @@ from app.services.database_service import (
     guardar_analisis_completo
 )
 
-
 contrato_secop = {
 
-    "id_contrato": "CD-DTAM NACION-CPS No. 001-2019",
+    "id_contrato":
+    "MC-ALCALDIA-CALI-045-2022",
 
-    "proceso_de_compra": "CO1.BDOS.123456",
+    "proceso_de_compra":
+    "CO1.BDOS.987654",
 
     "nombre_entidad":
-    "PARQUES NACIONALES NATURALES DE COLOMBIA - DIRECCION TERRITORIAL AMAZONIA",
+    "ALCALDIA DE SANTIAGO DE CALI",
 
     "proveedor_adjudicado":
-    "LEIZA LANK",
+    "TECNOLOGIAS DEL PACIFICO SAS",
 
     "modalidad_de_contratacion":
-    "Contratación Directa",
+    "Mínima Cuantía",
 
     "descripcion_del_proceso":
-    "Prestación de servicios jurídicos especializados",
+    "Adquisición de equipos tecnológicos para oficinas administrativas",
 
     "valor_del_contrato":
-    "5240183",
+    "185000000",
 
     "url_proceso":
-    "https://community.secop.gov.co/",
-
+    "https://community.secop.gov.co/"
 }
-
 
 respuesta_n8n = {
 
     "contrato_id":
-    "CD-DTAM NACION-CPS No. 001-2019",
+    "MC-ALCALDIA-CALI-045-2022",
 
     "entidad":
-    "PARQUES NACIONALES NATURALES DE COLOMBIA - DIRECCION TERRITORIAL AMAZONIA",
+    "ALCALDIA DE SANTIAGO DE CALI",
 
     "valor_cop":
-    5240183,
+    185000000,
 
     "contratista":
-    "LEIZA LANK",
+    "TECNOLOGIAS DEL PACIFICO SAS",
 
     "error":
     "Error al parsear respuesta del agente",
@@ -52,32 +51,33 @@ respuesta_n8n = {
     "raw":
     """
 {
-    "score_riesgo": 20,
+    "score_riesgo": 78,
 
-    "dictamen_final": "APROBADO",
+    "dictamen_final":
+    "RIESGO ALTO",
 
     "justificacion_dictamen":
-    "El contrato cumple con requisitos legales.",
+    "Se detectaron múltiples alertas asociadas al proceso contractual.",
 
     "analisis_financiero": {
 
-        "valor_total_cop": 5240183,
+        "valor_total_cop": 185000000,
 
-        "valor_por_dia": 174672,
+        "valor_por_dia": 6166666,
 
         "evaluacion_precio":
-        "JUSTO",
+        "POSIBLE SOBRECOSTO",
 
-        "sobrecosto_detectado": false
+        "sobrecosto_detectado": true
     },
 
     "analisis_contratista": {
 
         "nombre_completo":
-        "LEIZA FERNANDA LANK MANRIQUE",
+        "TECNOLOGIAS DEL PACIFICO SAS",
 
         "perfil_riesgo":
-        "BAJO-MEDIO"
+        "ALTO"
     },
 
     "analisis_plazo": {
@@ -85,51 +85,58 @@ respuesta_n8n = {
         "alerta_mismo_dia": true,
 
         "evaluacion_plazo":
-        "SOSPECHOSO"
+        "MUY SOSPECHOSO"
     },
 
     "analisis_fraccionamiento": {
 
-        "evidencia_fraccionamiento": false
+        "evidencia_fraccionamiento": true
     },
 
     "cumplimiento_legal": {
 
         "art_24_transparencia":
-        "CUMPLE PARCIAL",
+        "NO CUMPLE",
 
         "art_25_economia":
-        "CUMPLE",
+        "CUMPLE PARCIAL",
 
         "art_26_responsabilidad":
-        "CUMPLE"
+        "NO CUMPLE"
     },
 
     "banderas_rojas": [
 
+        "Posible fraccionamiento",
+
+        "Sobrecosto detectado",
+
         "Firma e inicio el mismo día",
 
-        "Contratación directa"
+        "Único oferente"
     ],
 
     "violacion_ley": [
 
-        "Art. 24 Ley 80/1993"
+        "Art. 24 Ley 80/1993",
+
+        "Art. 25 Ley 80/1993"
     ],
 
     "recomendaciones": [
 
-        "Verificar hoja de vida",
+        "Revisar estudios previos",
 
-        "Revisar estudio previo"
+        "Auditar cotizaciones",
+
+        "Verificar pluralidad de oferentes"
     ],
 
     "resumen_ejecutivo":
-    "Contrato con riesgo bajo."
+    "Contrato con múltiples indicadores de riesgo y posible sobrecosto."
 }
 """
 }
-
 
 resultado = guardar_analisis_completo(
     contrato_secop,

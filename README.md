@@ -48,3 +48,6 @@ pip install uvicorn
 ```bash
 deactivate
 ```
+
+
+en app\services\secop_import_service.py estoy descarganod y guardando en la base de datos el dataset

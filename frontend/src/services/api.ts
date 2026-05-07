@@ -1,147 +1,367 @@
-// src/services/api.ts
-import { normalizeContracts } from './normalizeContract';
+import { api } from './apiClient';
 
-// =====================================================
-// DATOS MOCK (para pruebas, sin depender de API externa)
-// =====================================================
-const MOCK_CONTRACTS_RAW = Array.from({ length: 50 }, (_, i) => ({
-  id_contrato: `mock-${i}`,
-  proceso_de_compra: `PROC-MOCK-${1000 + i}`,
-  nombre_entidad: ['Alcaldía de Medellín', 'Gobernación de Antioquia', 'Ministerio de Educación', 'Alcaldía de Bogotá', 'EPS Sanitas'][i % 5],
-  proveedor_adjudicado: ['Constructora XYZ', 'Consultores SAS', 'TecnoSoluciones', 'SaludTotal', 'Ingeniería JP'][i % 5],
-  valor_del_contrato: Math.floor(Math.random() * 500000000) + 10000000,
-  fecha_de_firma: 44500 + Math.floor(Math.random() * 800),
-  tipo_de_contrato: ['Prestación de servicios', 'Obra pública', 'Consultoría'][i % 3],
-  modalidad_de_contratacion: ['Mínima cuantía', 'Contratación directa', 'Selección Abreviada'][i % 3],
-  estado_contrato: Math.random() > 0.3 ? 'En ejecución' : 'Liquidado',
-  fecha_fin_liquidacion: '',
-}));
-
-// =====================================================
 // TIPOS
-// =====================================================
+
 export interface Contract {
+
   id: string;
+
   processNumber: string;
+
   entity: string;
+
   contractor: string;
+
   value: number;
+
   date: string;
+
   endDate?: string;
+
   contractType: string;
+
   flags: string[];
+
   riskScore: number;
 }
 
 export interface RedFlagsSummary {
+
   totalContracts: number;
+
   totalRedFlags: number;
+
   avgRiskScore: number;
+
   highRiskCount: number;
+
   flagsDistribution: Record<string, number>;
 }
 
 export interface ContractsResponse {
+
   data: Contract[];
+
   pagination: {
+
     page: number;
+
     limit: number;
+
     total: number;
+
     totalPages: number;
   };
 }
 
-// =====================================================
-// FUNCIONES DE CARGA (usando datos mock directamente)
-// =====================================================
-let cachedContracts: Contract[] | null = null;
 
-function loadMockContracts(): Contract[] {
-  if (cachedContracts) return cachedContracts;
-  const normalized = normalizeContracts(MOCK_CONTRACTS_RAW);
-  cachedContracts = normalized;
-  console.log(`📦 Mock: ${normalized.length} contratos cargados`);
-  return normalized;
+// NORMALIZADOR
+
+function normalizeContract(
+  item: any
+): Contract {
+
+  return {
+
+    id:
+      item.contrato_id,
+
+    processNumber:
+      item.contrato_id || 'SIN ID',
+
+    entity:
+      item.entidad || 'Sin entidad',
+
+    contractor:
+      item.proveedor || 'Sin proveedor',
+
+    value:
+      Number(item.valor_contrato || 0),
+
+    date:
+      item.fecha_firma ||
+      new Date().toISOString(),
+
+    endDate:
+      item.fecha_fin || '',
+
+    contractType:
+      item.modalidad || 'No especificado',
+
+    flags:
+      item.banderas_rojas || [],
+
+    riskScore:
+      item.score_riesgo || 0
+  };
 }
 
-function filterAndPaginate(contracts: Contract[], filters: any) {
-  let filtered = [...contracts];
-  if (filters.processNumber) {
-    const search = filters.processNumber.toLowerCase().replace(/\s/g, '');
-    filtered = filtered.filter(c =>
-      c.processNumber.toLowerCase().replace(/\s/g, '').includes(search)
-    );
-  }
-  if (filters.entity) {
-    filtered = filtered.filter(c =>
-      c.entity.toLowerCase().includes(filters.entity.toLowerCase())
-    );
-  }
-  if (filters.contractor) {
-    filtered = filtered.filter(c =>
-      c.contractor.toLowerCase().includes(filters.contractor.toLowerCase())
-    );
-  }
-  if (filters.contractType) {
-    filtered = filtered.filter(c =>
-      c.contractType.toLowerCase().includes(filters.contractType.toLowerCase())
-    );
-  }
-  if (filters.startDate) {
-    filtered = filtered.filter(c => c.date >= filters.startDate);
-  }
-  if (filters.endDate) {
-    filtered = filtered.filter(c => c.date <= filters.endDate);
-  }
-  if (filters.minRisk) {
-    filtered = filtered.filter(c => c.riskScore >= filters.minRisk);
-  }
+
+// LISTAR CONTRATOS
+
+export const fetchContracts = async (
+  filters: any = {}
+): Promise<ContractsResponse> => {
+
+  const limit =
+    filters.limit || 10;
+
   const page = filters.page || 1;
-  const limit = filters.limit || 10;
-  const start = (page - 1) * limit;
-  const paginatedData = filtered.slice(start, start + limit);
-  const totalPages = Math.ceil(filtered.length / limit);
+
+  const response = await api.get(
+    `/contracts?page=${page}&limit=${limit}`
+  );
+
+  const contracts =
+  response.data.map(normalizeContract);
+
   return {
-    data: paginatedData,
+
+    data: contracts,
+
     pagination: {
-      page,
-      limit,
-      total: filtered.length,
-      totalPages,
-    },
-  };
-}
 
-export const fetchContracts = async (filters: any = {}): Promise<ContractsResponse> => {
-  const allContracts = loadMockContracts();
-  return filterAndPaginate(allContracts, filters);
+      page:
+        response.pagination.page,
+
+      limit:
+        response.pagination.limit,
+
+      total:
+        response.pagination.total,
+
+      totalPages:
+        response.pagination.totalPages
+    }
+  };
 };
 
-export const fetchContractById = async (id: string): Promise<Contract> => {
-  const allContracts = loadMockContracts();
-  const contract = allContracts.find(c => c.id === id);
-  if (!contract) throw new Error('Contrato no encontrado');
-  return contract;
+
+// DETALLE CONTRATO
+
+export const fetchContractById =
+  async (
+    id: string
+  ): Promise<any> => {
+
+    const response =
+      await api.get(
+        `/contracts/${encodeURIComponent(id)}`
+      );
+
+    const contrato =
+      response.contrato;
+
+    const analisis =
+      response.analisis_ia;
+
+    return {
+
+      id:
+        contrato.contrato_id,
+
+      processNumber:
+        contrato.contrato_id,
+
+      entity:
+        contrato.entidad,
+
+      contractor:
+        contrato.proveedor,
+
+      value:
+        Number(
+          contrato.valor_contrato || 0
+        ),
+
+      date:
+        contrato.fecha_firma ||
+        new Date().toISOString(),
+
+      endDate:
+        contrato.fecha_fin || '',
+
+      contractType:
+        contrato.modalidad,
+
+      processUrl:
+        contrato.url_proceso ||
+        contrato.processUrl ||
+        '',
+
+      nitEntidad:
+        contrato.nit_entidad || '',
+
+      departamento:
+        contrato.departamento || '',
+
+      ciudad:
+        contrato.ciudad || '',
+
+      descripcionProceso:
+        contrato.descripcion_proceso || '',
+
+      objetoContrato:
+        contrato.objeto_contrato || '',
+
+      flags:
+        analisis?.banderas_rojas || [],
+
+      riskScore:
+        analisis?.score_riesgo || 0,
+
+      resumenEjecutivo:
+        analisis?.resumen_ejecutivo || '',
+
+      dictamenFinal:
+        analisis?.dictamen_final || '',
+
+      justificacionDictamen:
+        analisis?.justificacion_dictamen || '',
+
+      perfilRiesgo:
+        analisis?.perfil_riesgo || '',
+
+      evaluacionPrecio:
+        analisis?.evaluacion_precio || '',
+
+      evaluacionPlazo:
+        analisis?.evaluacion_plazo || '',
+
+      cumplimientoTransparencia:
+        analisis?.cumplimiento_transparencia || '',
+
+      cumplimientoEconomia:
+        analisis?.cumplimiento_economia || '',
+
+      cumplimientoResponsabilidad:
+        analisis?.cumplimiento_responsabilidad || '',
+
+      alertaMismoDia:
+        analisis?.alerta_mismo_dia || false,
+
+      sobrecostoDetectado:
+        analisis?.sobrecosto_detectado || false,
+
+      evidenciaFraccionamiento:
+        analisis?.evidencia_fraccionamiento || false,
+
+      recomendaciones:
+        analisis?.recomendaciones || [],
+
+      violacionesLey:
+        analisis?.violaciones_ley || [],
+
+      analisisFinanciero:
+        analisis?.analisis_financiero || {},
+
+      analisisContratista:
+        analisis?.analisis_contratista || {},
+
+      analisisTransparencia:
+        analisis?.analisis_transparencia || {},
+
+      analisisPlazo:
+        analisis?.analisis_plazo || {},
+
+      analisisFraccionamiento:
+        analisis?.analisis_fraccionamiento || {},
+
+      cumplimientoLegal:
+        analisis?.cumplimiento_legal || {},
+
+      raw:
+        contrato
+    };
 };
 
-export const fetchRedFlagsSummary = async (): Promise<RedFlagsSummary> => {
-  const allContracts = loadMockContracts();
-  const totalContracts = allContracts.length;
-  const totalRedFlags = allContracts.reduce((acc, c) => acc + c.flags.length, 0);
-  const avgRiskScore = totalContracts ? Math.round(allContracts.reduce((acc, c) => acc + c.riskScore, 0) / totalContracts) : 0;
-  const highRiskCount = allContracts.filter(c => c.riskScore >= 70).length;
-  const flagsDistribution = {
-    unique_bidder: allContracts.filter(c => c.flags.includes('unique_bidder')).length,
-    overcost: allContracts.filter(c => c.flags.includes('overcost')).length,
-    unusual_deadline: allContracts.filter(c => c.flags.includes('unusual_deadline')).length,
-    tailor_made_clause: allContracts.filter(c => c.flags.includes('tailor_made_clause')).length,
-  };
-  return { totalContracts, totalRedFlags, avgRiskScore, highRiskCount, flagsDistribution };
+export const analizarContrato = async (contratoId: string): Promise<any> => {
+
+  return await api.post(
+    `/analizar-y-guardar/${encodeURIComponent(contratoId)}`,
+    {}
+  );
 };
 
-export const sendChatMessage = async (message: string): Promise<{ reply: string }> => {
-  await new Promise(r => setTimeout(r, 500));
-  return {
-    reply: `🤖 [MODO DEMO] Respuesta a: "${message}".\n\nEsto es una simulación del asistente IA. En producción se conectará a un modelo real.`
-  };
+
+// DASHBOARD
+
+export const fetchRedFlagsSummary =
+  async (): Promise<RedFlagsSummary> => {
+
+    const response =
+      await api.get(
+        '/contracts?limit=100'
+      );
+
+    const contracts =
+  response.data.map(normalizeContract);
+
+    const totalContracts =
+      contracts.length;
+
+    const totalRedFlags =
+      contracts.reduce(
+        (acc: number, c: Contract) =>
+          acc + c.flags.length,
+        0
+      );
+
+    const avgRiskScore =
+      totalContracts
+        ? Math.round(
+
+            contracts.reduce(
+              (
+                acc: number,
+                c: Contract
+              ) =>
+                acc + c.riskScore,
+              0
+            ) / totalContracts
+
+          )
+        : 0;
+
+    const highRiskCount =
+      contracts.filter(
+        (c: Contract) =>
+          c.riskScore >= 70
+      ).length;
+
+    return {
+
+      totalContracts,
+
+      totalRedFlags,
+
+      avgRiskScore,
+
+      highRiskCount,
+      
+
+      flagsDistribution: {}
+    };
+};
+
+
+// CHAT IA
+
+export const sendChatMessage =
+  async (
+    message: string
+  ): Promise<{ reply: string }> => {
+
+    const response =
+      await api.post(
+        '/chat',
+        {
+          pregunta: message
+        }
+      );
+
+    return {
+      reply:
+        response.respuesta
+    };
 };

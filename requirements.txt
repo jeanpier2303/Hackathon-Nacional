@@ -4,3 +4,9 @@ python-dotenv
 sodapy
 pypdf
 pdfplumber
+
+# For database interaction
+sqlalchemy
+pymysql
+requests
+python-dotenv

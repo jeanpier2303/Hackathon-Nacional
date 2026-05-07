@@ -42,9 +42,14 @@ const ContractModal = ({ contractId, isOpen, onClose }) => {
       setError(null);
       fetchContractById(contractId)
         .then((data) => {
-          setContract(data);
-          setLoading(false);
-        })
+
+  console.log('DATA COMPLETA:', data);
+  console.log('URL:', data.processUrl);
+
+  setContract(data);
+
+  setLoading(false);
+})
         .catch((err) => {
           console.error(err);
           setError(err.message);
@@ -75,36 +80,126 @@ const ContractModal = ({ contractId, isOpen, onClose }) => {
   };
 
   const getRiskFactors = () => {
+
     if (!contract) return [];
+
     const factors = [];
-    const value = contract.value;
-    if (value > 200000000) factors.push({ name: 'Valor elevado', impact: 'Alto', description: 'El monto del contrato supera los 200 millones, lo que incrementa el riesgo de corrupción.' });
-    if (value > 50000000 && value <= 200000000) factors.push({ name: 'Valor moderado', impact: 'Medio', description: 'Monto significativo que requiere supervisión.' });
-    if (contract.flags.includes('unique_bidder')) factors.push({ name: 'Único proponente', impact: 'Alto', description: 'Solo un oferente, ausencia de competencia.' });
-    if (contract.flags.includes('overcost')) factors.push({ name: 'Sobrecosto', impact: 'Alto', description: 'Valor por encima del promedio del mercado.' });
-    if (contract.flags.includes('unusual_deadline')) factors.push({ name: 'Plazo inusual', impact: 'Medio', description: 'Plazos atípicos que pueden afectar la ejecución.' });
-    if (contract.flags.includes('tailor_made_clause')) factors.push({ name: 'Cláusula a medida', impact: 'Alto', description: 'Condiciones hechas para favorecer a un contratista.' });
-    if (factors.length === 0) factors.push({ name: 'Sin factores de riesgo significativos', impact: 'Bajo', description: 'El contrato parece regular.' });
+
+    if (contract.evaluacionPrecio) {
+
+      factors.push({
+
+        name:
+          'Evaluación financiera',
+
+        impact:
+          contract.sobrecostoDetectado
+            ? 'Alto'
+            : 'Medio',
+
+        description:
+          contract.evaluacionPrecio
+      });
+    }
+
+    if (contract.evaluacionPlazo) {
+
+      factors.push({
+
+        name:
+          'Evaluación del plazo',
+
+        impact:
+          contract.alertaMismoDia
+            ? 'Alto'
+            : 'Medio',
+
+        description:
+          contract.evaluacionPlazo
+      });
+    }
+
+    if (contract.perfilRiesgo) {
+
+      factors.push({
+
+        name:
+          'Perfil del contratista',
+
+        impact:
+          contract.perfilRiesgo.includes('ALTO')
+            ? 'Alto'
+            : 'Medio',
+
+        description:
+          contract.perfilRiesgo
+      });
+    }
+
+    if (contract.evidenciaFraccionamiento) {
+
+      factors.push({
+
+        name:
+          'Posible fraccionamiento',
+
+        impact:
+          'Alto',
+
+        description:
+          'Se detectó posible división irregular del contrato.'
+      });
+    }
+
+    if (factors.length === 0) {
+
+      factors.push({
+
+        name:
+          'Sin factores críticos',
+
+        impact:
+          'Bajo',
+
+        description:
+          'No se detectaron anomalías relevantes.'
+      });
+    }
+
     return factors;
   };
 
   const getChartData = () => {
+
     if (!contract) return [];
-    const flagScores = {
-      unique_bidder: 30,
-      overcost: 40,
-      unusual_deadline: 20,
-      tailor_made_clause: 35
-    };
-    const data = Object.keys(flagScores).map(flag => ({
-      name: flagScores[flag] ? getFlagLabel(flag).substring(0, 15) : flag,
-      score: contract.flags.includes(flag) ? flagScores[flag] : 0,
-      fullName: getFlagLabel(flag)
-    })).filter(d => d.score > 0);
-    if (data.length === 0) {
-      return [{ name: 'Sin alertas', score: 0 }];
+
+    const flags = contract.flags || [];
+
+    if (flags.length === 0) {
+
+      return [
+        {
+          name: 'Sin alertas',
+          score: 0
+        }
+      ];
     }
-    return data;
+
+    return flags.map((flag, index) => ({
+
+      name:
+        flag.substring(0, 28),
+
+      score:
+        Math.max(
+          20,
+          contract.riskScore /
+          flags.length
+        ),
+
+      fullName:
+        flag
+    }));
   };
 
   const getRiskDonutData = () => {
@@ -145,12 +240,39 @@ const ContractModal = ({ contractId, isOpen, onClose }) => {
   };
 
   const rawContract = contract?.raw || {};
-  const nitEntidad = rawContract.nit_entidad || contract?.nit_entidad || 'No disponible';
-  const departamento = rawContract.departamento || 'No especificado';
-  const ciudad = rawContract.ciudad || 'No especificada';
-  const modalidad = rawContract.modalidad_de_contratacion || contract?.modalidad || 'No especificada';
-  const estado = rawContract.estado_contrato || contract?.estado || 'Activo';
-  const documentoProveedor = rawContract.documento_proveedor || contract?.documento_proveedor || 'No disponible';
+
+  const processUrl =
+    rawContract.url_proceso ||
+    contract?.processUrl ||
+    '';
+
+  const nitEntidad =
+    rawContract.nit_entidad ||
+    contract?.nitEntidad ||
+    'No disponible';
+
+  const departamento =
+    rawContract.departamento ||
+    contract?.departamento ||
+    'No especificado';
+
+  const ciudad =
+    rawContract.ciudad ||
+    contract?.ciudad ||
+    'No especificada';
+
+  const modalidad =
+    rawContract.modalidad_contratacion ||
+    contract?.contractType ||
+    'No especificada';
+
+  const estado =
+    rawContract.estado_contrato ||
+    'Activo';
+
+  const documentoProveedor =
+    rawContract.documento_proveedor ||
+    'No disponible';
 
   const riskFactors = getRiskFactors();
   const chartData = getChartData();
@@ -279,11 +401,161 @@ const ContractModal = ({ contractId, isOpen, onClose }) => {
                       {(contract.flags?.length || 0) > 0 ? contract.flags?.map((flag) => <span key={flag} className="px-3 py-1.5 text-sm rounded-full bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300 font-medium">{getFlagLabel(flag)}</span>) : <span className="text-gray-500">Sin alertas</span>}
                     </div>
                   </div>
-
+                      
                   <div className="bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 rounded-xl p-6 border border-purple-100 dark:border-purple-800/30">
+                      
                     <div className="flex items-center gap-2 mb-3"><Cpu size={20} className="text-purple-600 dark:text-purple-400" /><h3 className="font-semibold text-gray-800 dark:text-white">Inteligencia IA</h3></div>
                     <p className="text-sm leading-relaxed text-gray-700 dark:text-gray-300">{getAiExplanation()}</p>
                   </div>
+                  {processUrl && (
+                      <div className="mt-6">
+                        <a
+                          href={contract.processUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition"
+                        >
+                          <FileText size={16} />
+                          Ver proceso en SECOP
+                        </a>
+                      </div>
+                    )}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
+
+  <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5">
+    <h3 className="font-bold text-lg mb-4">Análisis financiero</h3>
+
+    <div className="space-y-3 text-sm">
+
+      <div className="flex justify-between">
+        <span>Evaluación</span>
+        <span className="font-semibold">
+          {contract.evaluacionPrecio || 'No disponible'}
+        </span>
+      </div>
+
+      <div className="flex justify-between">
+        <span>Sobre costo</span>
+        <span className={contract.sobrecostoDetectado ? 'text-red-500 font-bold' : 'text-green-500 font-bold'}>
+          {contract.sobrecostoDetectado ? 'Detectado' : 'No detectado'}
+        </span>
+      </div>
+
+      <div className="flex justify-between">
+        <span>Perfil riesgo</span>
+        <span>{contract.perfilRiesgo || 'No disponible'}</span>
+      </div>
+
+      <div className="flex justify-between">
+        <span>Fraccionamiento</span>
+        <span className={contract.evidenciaFraccionamiento ? 'text-red-500 font-bold' : 'text-green-500 font-bold'}>
+          {contract.evidenciaFraccionamiento ? 'Posible' : 'No detectado'}
+        </span>
+      </div>
+
+    </div>
+  </div>
+
+  <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5">
+    <h3 className="font-bold text-lg mb-4">Cumplimiento legal</h3>
+
+    <div className="space-y-3 text-sm">
+
+      <div className="flex justify-between">
+        <span>Transparencia</span>
+        <span>{contract.cumplimientoTransparencia || 'N/D'}</span>
+      </div>
+
+      <div className="flex justify-between">
+        <span>Economía</span>
+        <span>{contract.cumplimientoEconomia || 'N/D'}</span>
+      </div>
+
+      <div className="flex justify-between">
+        <span>Responsabilidad</span>
+        <span>{contract.cumplimientoResponsabilidad || 'N/D'}</span>
+      </div>
+
+      <div className="flex justify-between">
+        <span>Dictamen IA</span>
+        <span className="font-bold text-purple-600">
+          {contract.dictamenFinal || 'Sin dictamen'}
+        </span>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+
+<div className="mt-8 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5">
+
+  <h3 className="font-bold text-lg mb-4">
+    Recomendaciones IA
+  </h3>
+
+  <div className="space-y-3">
+
+    {(contract.recomendaciones || []).map((item, index) => (
+      <div key={index} className="flex gap-3 text-sm">
+        <CheckCircle size={16} className="text-green-500 mt-1" />
+        <p>{item}</p>
+      </div>
+    ))}
+
+  </div>
+
+</div>
+
+
+<div className="mt-8 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5">
+
+  <h3 className="font-bold text-lg mb-4">
+    Posibles violaciones legales
+  </h3>
+
+  <div className="space-y-3">
+
+    {(contract.violacionesLey || []).map((item, index) => (
+      <div key={index} className="flex gap-3 text-sm">
+        <AlertTriangle size={16} className="text-red-500 mt-1" />
+        <p>{item}</p>
+      </div>
+    ))}
+
+  </div>
+
+</div>
+
+
+<div className="mt-8 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-100 dark:border-blue-800 rounded-xl p-6">
+
+  <h3 className="font-bold text-lg mb-4">
+    Resumen ejecutivo IA
+  </h3>
+
+  <p className="leading-relaxed text-sm">
+    {contract.resumenEjecutivo || 'No disponible'}
+  </p>
+
+</div>
+
+
+{processUrl && (
+  <div className="mt-8">
+    <a
+      href={processUrl}
+      target="_blank"
+      rel="noreferrer"
+      className="inline-flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-5 py-3 rounded-xl font-medium transition"
+    >
+      <FileText size={18} />
+      Ver proceso SECOP
+    </a>
+  </div>
+)}
+                  
                 </div>
               )}
             </motion.div>
