@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { AuthProvider } from './contexts/AuthContext';
+import { ModalProvider } from './contexts/ModalContext';
 import { useAuth } from './hooks/useAuth';
 
 import Login from './pages/Login';
@@ -9,37 +10,20 @@ import Contracts from './pages/Contracts';
 import ContractDetail from './pages/ContractDetail';
 import ChatIA from './pages/ChatIA';
 import NotFound from './pages/NotFound';
-
 import Layout from './components/layout/Layout';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
-
-  if (loading) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        Cargando...
-      </div>
-    );
-  }
-
-  return isAuthenticated
-    ? <>{children}</>
-    : <Navigate to="/login" replace />;
+  if (loading) return <div className="flex h-screen items-center justify-center">Cargando...</div>;
+  return isAuthenticated ? <>{children}</> : <Navigate to="/login" replace />;
 };
 
 function AppRoutes() {
   return (
     <AnimatePresence mode="wait">
       <Routes>
-
-        {/* LOGIN */}
         <Route path="/login" element={<Login />} />
-
-        {/* REDIRECCIÓN INICIAL */}
         <Route path="/" element={<Navigate to="/login" replace />} />
-
-        {/* RUTAS PROTEGIDAS */}
         <Route
           path="/dashboard"
           element={
@@ -50,7 +34,6 @@ function AppRoutes() {
             </ProtectedRoute>
           }
         />
-
         <Route
           path="/contracts"
           element={
@@ -61,7 +44,6 @@ function AppRoutes() {
             </ProtectedRoute>
           }
         />
-
         <Route
           path="/contract/:id"
           element={
@@ -72,7 +54,6 @@ function AppRoutes() {
             </ProtectedRoute>
           }
         />
-
         <Route
           path="/chat"
           element={
@@ -83,10 +64,7 @@ function AppRoutes() {
             </ProtectedRoute>
           }
         />
-
-        {/* 404 */}
         <Route path="*" element={<NotFound />} />
-
       </Routes>
     </AnimatePresence>
   );
@@ -95,9 +73,11 @@ function AppRoutes() {
 function App() {
   return (
     <BrowserRouter>
-      <AuthProvider>
-        <AppRoutes />
-      </AuthProvider>
+      <ModalProvider>
+        <AuthProvider>
+          <AppRoutes />
+        </AuthProvider>
+      </ModalProvider>
     </BrowserRouter>
   );
 }
