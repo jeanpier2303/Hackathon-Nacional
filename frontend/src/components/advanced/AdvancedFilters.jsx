@@ -67,7 +67,7 @@ export const AdvancedFilters = ({ filters, onChange, onApply }) => {
             />
             <Input
               label="Proveedor"
-              placeholder="Nombre del contratista"
+              placeholder="Nombre del Proveedor"
               value={localFilters.contractor || ''}
               onChange={(e) => handleChange('contractor', e.target.value)}
               icon={<User size={16} />}

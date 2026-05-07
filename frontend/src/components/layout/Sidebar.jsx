@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 
 const Sidebar = ({ collapsed = false }) => {
   const navItems = [
-    { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
+    { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { to: '/contracts', icon: FileText, label: 'Contratos' },
     { to: '/alerts', icon: ShieldAlert, label: 'Alertas' },
     { to: '/reports', icon: BarChart3, label: 'Reportes' },

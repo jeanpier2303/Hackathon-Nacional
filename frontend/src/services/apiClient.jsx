@@ -1,19 +1,33 @@
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
 const API_KEY = import.meta.env.VITE_API_KEY || '';
 
 async function request(endpoint, options = {}) {
   const url = `${API_BASE}${endpoint}`;
+  console.log('📡 Llamando a:', url);
+  
   const headers = {
     'Content-Type': 'application/json',
     ...(API_KEY && { 'X-API-Key': API_KEY }),
     ...options.headers,
   };
-  const response = await fetch(url, { ...options, headers });
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({}));
-    throw new Error(error.message || `HTTP ${response.status}`);
+  
+  try {
+    const response = await fetch(url, { ...options, headers });
+    console.log('📡 Respuesta status:', response.status);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ Error respuesta:', errorText);
+      throw new Error(`HTTP ${response.status}: ${errorText.substring(0, 100)}`);
+    }
+    
+    const json = await response.json();
+    console.log('✅ Datos recibidos (primeros 100 bytes):', JSON.stringify(json).substring(0, 200));
+    return json;
+  } catch (error) {
+    console.error('❌ Error en fetch:', error);
+    throw error;
   }
-  return response.json();
 }
 
 export const api = {
