@@ -1,8 +1,9 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { fetchContracts, fetchRedFlagsSummary } from '../services/api';
-import type { ContractsFilters, ContractsResponse, RedFlagsSummary } from '../services/api';
+import type { ContractsResponse, RedFlagsSummary } from '../services/api';
 
-export const useContracts = (filters: ContractsFilters = {}) => {
+export const useContracts = (filters: any = {}) => {
   const [contractsData, setContractsData] = useState<ContractsResponse | null>(null);
   const [summary, setSummary] = useState<RedFlagsSummary | null>(null);
   const [loading, setLoading] = useState(true);
@@ -23,7 +24,7 @@ export const useContracts = (filters: ContractsFilters = {}) => {
     } finally {
       setLoading(false);
     }
-  }, [filters]);
+  }, [JSON.stringify(filters)]);
 
   useEffect(() => {
     loadData();

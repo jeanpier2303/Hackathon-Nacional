@@ -1,80 +1,11 @@
+// src/hooks/useNotifications.js
 import { useState, useEffect } from 'react';
 import { useContracts } from './useContracts';
 
-export const useNotifications = () => {
-  const { contracts, summary, loading } = useContracts({ limit: 100 }); // obtener todos los contratos
-  const [notifications, setNotifications] = useState([]);
-
-  useEffect(() => {
-    if (loading || !contracts.length) return;
-
-    // Generar notificaciones basadas en datos reales
-    const newNotifications = [];
-
-    // 1. Contratos con riesgo alto (score >= 70)
-    const highRiskContracts = contracts.filter(c => c.riskScore >= 70);
-    highRiskContracts.forEach(contract => {
-      newNotifications.push({
-        id: `high-risk-${contract.id}`,
-        title: `Alto riesgo detectado`,
-        description: `Contrato ${contract.processNumber} (${contract.entity}) tiene un riesgo del ${contract.riskScore}%`,
-        time: formatRelativeTime(contract.date),
-        read: false,
-        type: 'high_risk',
-        contractId: contract.id,
-      });
-    });
-
-    // 2. Alertas por flags (banderas)
-    contracts.forEach(contract => {
-      if (contract.flags && contract.flags.length > 0) {
-        contract.flags.forEach(flag => {
-          const flagLabel = getFlagLabel(flag);
-          newNotifications.push({
-            id: `flag-${contract.id}-${flag}`,
-            title: `Alerta: ${flagLabel}`,
-            description: `En el contrato ${contract.processNumber} se detectó ${flagLabel.toLowerCase()}`,
-            time: formatRelativeTime(contract.date),
-            read: false,
-            type: 'flag',
-            contractId: contract.id,
-            flag,
-          });
-        });
-      }
-    });
-
-    // 3. Resumen de alertas (solo una notificación global si hay muchas)
-    if (summary?.totalRedFlags > 0) {
-      newNotifications.unshift({
-        id: 'summary-alerts',
-        title: `Total de alertas: ${summary.totalRedFlags}`,
-        description: `Se han detectado ${summary.totalRedFlags} banderas de riesgo en ${summary.totalContracts} contratos auditados.`,
-        time: 'ahora',
-        read: false,
-        type: 'summary',
-      });
-    }
-
-    // Limitar a las 10 más recientes (por fecha). Ordenar por fecha descendente
-    newNotifications.sort((a, b) => (a.time > b.time ? -1 : 1));
-    setNotifications(newNotifications.slice(0, 10));
-  }, [contracts, summary, loading]);
-
-  const markAsRead = (id) => {
-    setNotifications(prev =>
-      prev.map(notif => (notif.id === id ? { ...notif, read: true } : notif))
-    );
-  };
-
-  const unreadCount = notifications.filter(n => !n.read).length;
-
-  return { notifications, unreadCount, markAsRead };
-};
-
-// Función auxiliar para formatear tiempo relativo
-function formatRelativeDate(dateString) {
+function formatRelativeTime(dateString) {
+  if (!dateString) return 'fecha desconocida';
   const date = new Date(dateString);
+  if (isNaN(date.getTime())) return 'fecha inválida';
   const now = new Date();
   const diffMs = now - date;
   const diffMins = Math.floor(diffMs / 60000);
@@ -98,3 +29,76 @@ function getFlagLabel(flagKey) {
   };
   return labels[flagKey] || flagKey;
 }
+
+export const useNotifications = () => {
+  const { contracts, summary, loading } = useContracts({ limit: 1000 });
+  const [notifications, setNotifications] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    if (loading) return;
+    if (!contracts.length && !loading) {
+      setIsLoading(false);
+      setNotifications([]);
+      return;
+    }
+
+    const newNotifications = [];
+
+    // Contratos con riesgo alto
+    contracts.forEach(contract => {
+      if (contract.riskScore >= 70) {
+        newNotifications.push({
+          id: `risk-${contract.id}`,
+          title: 'Alto riesgo detectado',
+          description: `${contract.processNumber} (${contract.entity}) - Riesgo ${contract.riskScore}%`,
+          time: formatRelativeTime(contract.date),
+          read: false,
+          type: 'high_risk',
+          contractId: contract.id,
+        });
+      }
+    });
+
+    // Alertas por flags
+    contracts.forEach(contract => {
+      if (contract.flags && contract.flags.length) {
+        contract.flags.forEach(flag => {
+          newNotifications.push({
+            id: `flag-${contract.id}-${flag}`,
+            title: `Alerta: ${getFlagLabel(flag)}`,
+            description: `En ${contract.processNumber} se detectó ${getFlagLabel(flag).toLowerCase()}`,
+            time: formatRelativeTime(contract.date),
+            read: false,
+            type: 'flag',
+            contractId: contract.id,
+          });
+        });
+      }
+    });
+
+    // Resumen global
+    if (summary?.totalRedFlags > 0) {
+      newNotifications.unshift({
+        id: 'summary',
+        title: `Total de alertas: ${summary.totalRedFlags}`,
+        description: `Se han detectado ${summary.totalRedFlags} alertas en ${summary.totalContracts} contratos.`,
+        time: 'ahora',
+        read: false,
+        type: 'summary',
+      });
+    }
+
+    newNotifications.sort((a, b) => (a.time > b.time ? -1 : 1));
+    setNotifications(newNotifications.slice(0, 10));
+    setIsLoading(false);
+  }, [contracts, summary, loading]);
+
+  const markAsRead = (id) => {
+    setNotifications(prev => prev.map(n => (n.id === id ? { ...n, read: true } : n)));
+  };
+
+  const unreadCount = notifications.filter(n => !n.read).length;
+
+  return { notifications, unreadCount, markAsRead, loading: isLoading };
+};

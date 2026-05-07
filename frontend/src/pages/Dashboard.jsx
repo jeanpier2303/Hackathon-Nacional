@@ -8,21 +8,7 @@ import AlertsPanel from '../components/dashboard/AlertsPanel';
 import { TableSkeleton } from '../components/common/Skeleton';
 
 const Dashboard = () => {
-  const contracts = [];
-  const loading = false;
-  const error = null;
-
-  const summary = {
-    totalContracts: 120,
-    totalRedFlags: 18,
-    avgRiskScore: 37,
-    highRiskCount: 5,
-    flagsDistribution: {
-      "Contratación directa": 10,
-      "Sobreprecio": 5,
-      "Riesgo documental": 3
-    }
-  };
+  const { contracts, summary, loading, error } = useContracts();
 
   if (error) return <div className="p-4 bg-red-100 text-red-700 rounded-lg">Error: {error}</div>;
 
