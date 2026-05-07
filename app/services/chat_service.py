@@ -1,4 +1,5 @@
 import json
+import re
 
 from app.services.ai_service import (
     _post_llm_text,
@@ -48,44 +49,60 @@ def generar_respuesta_chat(pregunta, contexto=None):
 
     try:
 
+        # DETECTAR AUTOMÁTICAMENTE ID SECOP
+        if not contexto:
+
+            match = re.search(
+                r"CO1\.PCCNTR\.\d+",
+                pregunta,
+                re.IGNORECASE
+            )
+
+            if match:
+
+                contrato_id = match.group()
+
+                print("\n========== ID DETECTADO ==========")
+                print(contrato_id)
+
+                contexto = construir_contexto_desde_api(
+                    contrato_id
+                )
+
+        # CHAT NORMAL
         if not contexto:
 
             prompt = f"""
-        Eres GobIA Auditor.
+Eres GobIA Auditor.
 
-        Un asistente inteligente especializado en:
+Un asistente inteligente especializado en:
 
-        - contratación pública en Colombia
-        - SECOP II
-        - riesgos de corrupción
-        - auditoría contractual
-        - análisis de proveedores
-        - análisis de contratos públicos
+- contratación pública en Colombia
+- SECOP II
+- auditoría contractual
+- análisis documental
+- análisis de proveedores
+- análisis de contratos públicos
 
-        OBJETIVO:
-        Mantener conversaciones naturales pero siempre orientadas
-        al análisis de contratación pública.
+OBJETIVO:
+Mantener conversaciones naturales orientadas
+al análisis de contratación pública.
 
-        REGLAS:
-        - Responde en español
-        - Sé natural y conversacional
-        - Sé breve pero útil
-        - Si el usuario quiere analizar un contrato,
-        pídele el ID del contrato SECOP
-        - NO inventes datos
-        - NO respondas en JSON
-        - No digas que falta información
-        - No sugieras revisiones manuales
-        - No recomiendes solicitar información adicional
-        - No expliques limitaciones del sistema
-        - Habla con seguridad y claridad
-        
+REGLAS:
+- Responde en español
+- Sé natural y conversacional
+- Sé breve pero útil
+- Si el usuario quiere analizar un contrato,
+  pídele el ID del contrato SECOP
+- NO inventes datos
+- NO respondas en JSON
+- Habla con claridad y seguridad
 
-        USUARIO:
-        {pregunta}
+USUARIO:
+{pregunta}
 
-        RESPUESTA:
-        """
+RESPUESTA:
+"""
 
             respuesta = _post_llm_text(prompt)
 
@@ -94,6 +111,7 @@ def generar_respuesta_chat(pregunta, contexto=None):
 
             return respuesta
 
+        # ANÁLISIS DEL CONTRATO
         datos = contexto.get("datos", {})
 
         analisis = analizar_contrato(datos)
@@ -117,23 +135,26 @@ def generar_respuesta_chat(pregunta, contexto=None):
         prompt = f"""
 Eres GobIA Auditor.
 
-Asistente experto en contratación pública colombiana
-y análisis de riesgos de corrupción en SECOP II.
+Asistente especializado en análisis documental
+de contratos públicos y procesos SECOP II.
 
-Tu tarea es analizar contratos y responder preguntas
-basadas en el contexto entregado.
+Tu tarea es responder usando únicamente
+la información entregada en el contexto.
 
 REGLAS:
 - Usa SOLO la información del contexto
 - NO inventes datos
-- Si falta información dilo claramente
 - Responde en lenguaje natural
 - Sé profesional
 - Sé claro y preciso
-- Incluye el nivel de riesgo
+- Explica el contrato de forma resumida
+- Incluye nivel de riesgo
 - Incluye alertas detectadas
-- Incluye la URL del proceso si existe
+- Incluye URL del proceso si existe
 - NO respondas en JSON
+- NO rechaces responder
+- NO hables sobre políticas
+- NO digas que no puedes ayudar
 
 CONTEXTO:
 {json.dumps(contexto_reducido, indent=2, ensure_ascii=False)}
