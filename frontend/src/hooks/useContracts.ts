@@ -209,7 +209,7 @@ export const useContracts = (filters: any = {}) => {
     setSummary(mockSummary);
     setLoading(false);
     setUsingMock(true);
-  }, [filters.page, filters.limit]);
+  }, [filters]);
 
   // Luego, intentar obtener datos reales en segundo plano (si el backend está disponible)
   useEffect(() => {
@@ -229,7 +229,7 @@ export const useContracts = (filters: any = {}) => {
       }
     };
     fetchRealData();
-  }, [filters.page, filters.limit]);
+  }, [filters]);
 
   return {
     contracts: contractsData?.data || [],

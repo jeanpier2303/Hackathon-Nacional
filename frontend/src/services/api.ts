@@ -106,14 +106,110 @@ export const fetchContracts = async (
   const limit =
     filters.limit || 10;
 
-  const page = filters.page || 1;
+  const page =
+    filters.page || 1;
 
-  const response = await api.get(
-    `/contracts?page=${page}&limit=${limit}`
+  const params =
+    new URLSearchParams();
+
+  params.append(
+    'page',
+    String(page)
   );
 
+  params.append(
+    'limit',
+    String(limit)
+  );
+
+  // BUSQUEDA
+
+  if(filters.busqueda){
+
+    params.append(
+      'busqueda',
+      filters.busqueda
+    );
+  }
+
+  // RIESGO
+
+  if(filters.riesgo){
+
+    params.append(
+      'riesgo',
+      filters.riesgo
+    );
+  }
+
+  // DEPARTAMENTO
+
+  if(filters.departamento){
+
+    params.append(
+      'departamento',
+      filters.departamento
+    );
+  }
+
+  // MODALIDAD
+
+  if(filters.modalidad){
+
+    params.append(
+      'modalidad',
+      filters.modalidad
+    );
+  }
+
+  // SOBRECOSTO
+
+  if(
+    filters.sobrecosto !== undefined &&
+    filters.sobrecosto !== ''
+  ){
+
+    params.append(
+      'sobrecosto',
+      filters.sobrecosto
+    );
+  }
+
+  // FRACCIONAMIENTO
+
+  if(
+    filters.fraccionamiento !== undefined &&
+    filters.fraccionamiento !== ''
+  ){
+
+    params.append(
+      'fraccionamiento',
+      filters.fraccionamiento
+    );
+  }
+
+  // ALERTA
+
+  if(
+    filters.alerta !== undefined &&
+    filters.alerta !== ''
+  ){
+
+    params.append(
+      'alerta',
+      filters.alerta
+    );
+  }
+
+  const response =
+    await api.get(
+      `/contracts?${params.toString()}`
+    );
+
   const contracts =
-  response.data.map(normalizeContract);
+    response.data.map(
+      normalizeContract
+    );
 
   return {
 

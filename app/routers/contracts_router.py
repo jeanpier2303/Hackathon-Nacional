@@ -16,15 +16,123 @@ router = APIRouter()
 
 
 @router.get("/contracts")
-def listar_contratos(page: int = 1, limit: int = 10):
+def listar_contratos(
+    page:int=1,
+    limit:int=10,
+
+    riesgo:str=None,
+    departamento:str=None,
+    modalidad:str=None,
+    sobrecosto:bool=None,
+    fraccionamiento:bool=None,
+    alerta:bool=None,
+    busqueda:str=None
+):
     
     db = SessionLocal()
     try:
         offset = (page - 1) * limit
 
-        query = db.query(Contrato)
+        query = (
+            db.query(
+                Contrato,
+                AnalisisIA
+            )
+            .outerjoin(
+                AnalisisIA,
+                Contrato.contrato_id == AnalisisIA.contrato_id
+            )
+        )
+
+
+        # FILTRO RIESGO
+
+        if riesgo == "alto":
+
+            query = query.filter(
+                AnalisisIA.score_riesgo >= 70
+            )
+
+        elif riesgo == "medio":
+
+            query = query.filter(
+                AnalisisIA.score_riesgo.between(40,69)
+            )
+
+        elif riesgo == "bajo":
+
+            query = query.filter(
+                AnalisisIA.score_riesgo < 40
+            )
+
+
+        # FILTRO DEPARTAMENTO
+
+        if departamento:
+
+            query = query.filter(
+                Contrato.departamento.ilike(
+                    f"%{departamento}%"
+                )
+            )
+
+
+        # FILTRO MODALIDAD
+
+        if modalidad:
+
+            query = query.filter(
+                Contrato.modalidad_contratacion.ilike(
+                    f"%{modalidad}%"
+                )
+            )
+
+
+        # FILTRO SOBRECOSTO
+
+        if sobrecosto is not None:
+
+            query = query.filter(
+                AnalisisIA.sobrecosto_detectado == sobrecosto
+            )
+
+
+        # FILTRO FRACCIONAMIENTO
+
+        if fraccionamiento is not None:
+
+            query = query.filter(
+                AnalisisIA.evidencia_fraccionamiento == fraccionamiento
+            )
+
+
+        # FILTRO ALERTA MISMO DIA
+
+        if alerta is not None:
+
+            query = query.filter(
+                AnalisisIA.alerta_mismo_dia == alerta
+            )
+
+
+        # BUSCADOR GENERAL
+
+        if busqueda:
+
+            query = query.filter(
+
+                (Contrato.entidad.ilike(f"%{busqueda}%")) |
+
+                (Contrato.proveedor.ilike(f"%{busqueda}%")) |
+
+                (Contrato.objeto_contrato.ilike(f"%{busqueda}%")) |
+
+                (Contrato.contrato_id.ilike(f"%{busqueda}%"))
+            )
+
 
         total = query.count()
+
 
         contratos = (
             query
@@ -34,15 +142,8 @@ def listar_contratos(page: int = 1, limit: int = 10):
             .all()
         )
         resultado = []
-        for c in contratos:
-            analisis = (
-                db.query(AnalisisIA)
-                .filter(
-                    AnalisisIA.contrato_id
-                    == c.contrato_id
-                )
-                .first()
-            )
+        for c, analisis in contratos:
+            
             resultado.append({
 
                 "contrato_id":
