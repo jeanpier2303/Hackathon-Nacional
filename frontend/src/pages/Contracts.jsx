@@ -25,14 +25,16 @@ const Contracts = () => {
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4 sm:space-y-6">
       <AdvancedFilters filters={filters} onApply={handleFilterApply} />
-      {loading ? <TableSkeleton /> : error ? <div className="text-red-600 p-4 rounded-lg text-center">Error: {error}</div> : (
-        <ContractsTable
-          contracts={contracts}
-          pagination={pagination}
-          onPageChange={handlePageChange}
-          globalFilter={globalFilter}
-          onGlobalFilterChange={setGlobalFilter}
-        />
+      {loading ? <TableSkeleton /> : error ? <div className="text-red-600 p-4 rounded-lg">Error: {error}</div> : (
+        <div className="overflow-x-auto">
+          <ContractsTable
+            contracts={contracts}
+            pagination={pagination}
+            onPageChange={handlePageChange}
+            globalFilter={globalFilter}
+            onGlobalFilterChange={setGlobalFilter}
+          />
+        </div>
       )}
     </motion.div>
   );

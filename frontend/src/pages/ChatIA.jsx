@@ -8,10 +8,8 @@ import { Card } from '../components/common/Card';
 import { Button } from '../components/common/Button';
 import { sendChatMessage } from '../services/api';
 
-// Helper para generar ID único
 const generateId = () => `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-// Cargar historial desde localStorage
 const loadChatHistory = () => {
   const stored = localStorage.getItem('gobia_chat_history');
   if (stored) {
@@ -22,12 +20,10 @@ const loadChatHistory = () => {
   return [];
 };
 
-// Guardar historial
 const saveChatHistory = (chats) => {
   localStorage.setItem('gobia_chat_history', JSON.stringify(chats));
 };
 
-// Crear nuevo chat
 const createNewChat = () => ({
   id: generateId(),
   title: `Conversación ${new Date().toLocaleString()}`,
@@ -54,24 +50,18 @@ const ChatIA = () => {
 
   const activeChat = chats.find(c => c.id === activeChatId) || chats[0];
 
-  // Auto-scroll
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [activeChat?.messages]);
 
-  // Guardar cambios en localStorage cada vez que cambian los chats
   useEffect(() => {
     saveChatHistory(chats);
   }, [chats]);
 
-  // Responsive: cerrar sidebar automáticamente en móvil al iniciar
   useEffect(() => {
     const handleResize = () => {
-      if (window.innerWidth < 768) {
-        setSidebarOpen(false);
-      } else {
-        setSidebarOpen(true);
-      }
+      if (window.innerWidth < 768) setSidebarOpen(false);
+      else setSidebarOpen(true);
     };
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
@@ -96,7 +86,6 @@ const ChatIA = () => {
   const handleDeleteChat = (chatId, e) => {
     e.stopPropagation();
     if (chats.length === 1) {
-      // No borrar el último, mejor limpiar mensajes
       const resetChat = { ...chats[0], messages: [chats[0].messages[0]], updatedAt: new Date().toISOString() };
       setChats([resetChat]);
       if (activeChatId === chatId) setActiveChatId(resetChat.id);
@@ -126,9 +115,7 @@ const ChatIA = () => {
   const handleSend = async () => {
     if (!input.trim() && !selectedFile) return;
 
-    const userMessageText = input.trim() || '';
-    let fullUserContent = userMessageText;
-
+    let fullUserContent = input.trim() || '';
     if (selectedFile) {
       fullUserContent += `\n\n[Archivo adjunto: ${selectedFile.name} (${(selectedFile.size / 1024).toFixed(2)} KB)]`;
     }
@@ -144,18 +131,16 @@ const ChatIA = () => {
     setLoading(true);
 
     try {
-      const contratoMatch = userMessageText.match(/CO1\.PCCNTR\.\d+/i);
+      const contratoMatch = input.match(/CO1\.PCCNTR\.\d+/i);
       const contratoId = contratoMatch ? contratoMatch[0] : null;
 
       const data = await sendChatMessage({
-        pregunta: userMessageText,
+        pregunta: input,
         contrato_id: contratoId
       });
 
       const assistantMsg = { role: 'assistant', content: data.respuesta };
-      const finalMessages = [...updatedMessages, assistantMsg];
-      updateCurrentChat(finalMessages);
-
+      updateCurrentChat([...updatedMessages, assistantMsg]);
     } catch (error) {
       console.error(error);
       const errorMsg = { role: 'assistant', content: 'Lo siento, no pude procesar tu consulta. Por favor intenta de nuevo.' };
@@ -165,7 +150,6 @@ const ChatIA = () => {
     }
   };
 
-  // Formatear título del chat
   const getChatTitle = (chat) => {
     if (chat.title && !chat.title.startsWith('Conversación')) return chat.title;
     const firstUserMsg = chat.messages.find(m => m.role === 'user')?.content;
@@ -177,25 +161,25 @@ const ChatIA = () => {
   };
 
   return (
-    <div className="h-[calc(100vh-8rem)] flex gap-2 sm:gap-4">
-      {/* Sidebar de historial */}
+    <div className="h-[calc(100vh-8rem)] flex gap-3 sm:gap-4">
+      {/* Sidebar historial - responsive */}
       <AnimatePresence>
         {sidebarOpen && (
           <motion.div
             initial={{ width: 0, opacity: 0 }}
-            animate={{ width: 260, opacity: 1 }}
+            animate={{ width: 280, opacity: 1 }}
             exit={{ width: 0, opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="relative flex-shrink-0 overflow-hidden rounded-xl sm:rounded-2xl glass-card"
+            className="flex-shrink-0 overflow-hidden rounded-2xl glass-card"
           >
-            <div className="w-64 sm:w-72 h-full flex flex-col">
+            <div className="w-72 h-full flex flex-col">
               <div className="p-3 sm:p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-                <h3 className="font-semibold text-sm sm:text-base text-gray-800 dark:text-white">Historial</h3>
+                <h3 className="font-semibold text-gray-800 dark:text-white text-sm sm:text-base">Historial</h3>
                 <button
                   onClick={() => setSidebarOpen(false)}
                   className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition"
                 >
-                  <ChevronLeft size={16} />
+                  <ChevronLeft size={18} />
                 </button>
               </div>
               <div className="flex-1 overflow-y-auto p-2 space-y-2 custom-scrollbar">
@@ -223,8 +207,9 @@ const ChatIA = () => {
                 ))}
               </div>
               <div className="p-3 sm:p-4 border-t border-gray-200 dark:border-gray-700">
-                <Button onClick={handleNewChat} variant="primary" className="w-full gap-2 text-sm sm:text-base py-1.5 sm:py-2">
-                  <Plus size={14} /> Nuevo chat
+                <Button onClick={handleNewChat} variant="primary" className="w-full gap-2 text-sm">
+                  <Plus size={14} />
+                  Nuevo chat
                 </Button>
               </div>
             </div>
@@ -232,25 +217,25 @@ const ChatIA = () => {
         )}
       </AnimatePresence>
 
-      {/* Panel principal del chat */}
+      {/* Panel principal */}
       <div className="flex-1 flex flex-col min-w-0">
         {!sidebarOpen && (
           <button
             onClick={() => setSidebarOpen(true)}
-            className="mb-2 sm:mb-3 p-1.5 sm:p-2 rounded-xl glass-card w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center"
+            className="mb-3 p-2 rounded-xl glass-card w-10 h-10 flex items-center justify-center"
           >
             <Menu size={18} />
           </button>
         )}
 
         <Card className="flex-1 flex flex-col overflow-hidden shadow-xl">
-          <div className="p-3 sm:p-4 border-b border-gray-200 dark:border-gray-700 flex flex-wrap items-center justify-between gap-2 bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-gray-800 dark:to-gray-900">
+          <div className="p-3 sm:p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-gray-800 dark:to-gray-900">
             <div className="flex items-center gap-2">
               <div className="p-1.5 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-                <Sparkles className="text-purple-600" size={16} className="sm:size-20" />
+                <Sparkles className="text-purple-600" size={18} />
               </div>
               <div>
-                <h2 className="font-bold text-sm sm:text-base text-gray-800 dark:text-white">Asistente IA</h2>
+                <h2 className="font-bold text-gray-800 dark:text-white text-sm sm:text-base">Asistente IA</h2>
                 <p className="text-[10px] sm:text-xs text-gray-500">Centro de Inteligencia Anticorrupción</p>
               </div>
             </div>
@@ -259,7 +244,7 @@ const ChatIA = () => {
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3 sm:space-y-4 bg-gray-50/30 dark:bg-gray-900/20 custom-scrollbar">
+          <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-4 bg-gray-50/30 dark:bg-gray-900/20 custom-scrollbar">
             <AnimatePresence initial={false}>
               {activeChat?.messages.map((msg, idx) => (
                 <motion.div
@@ -271,28 +256,28 @@ const ChatIA = () => {
                 >
                   {msg.role === 'assistant' && (
                     <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center shadow-md flex-shrink-0">
-                      <Bot size={14} className="sm:size-16 text-white" />
+                      <Bot size={14} className="text-white" />
                     </div>
                   )}
-                  <div className={`max-w-[85%] sm:max-w-[75%] rounded-2xl px-3 sm:px-4 py-1.5 sm:py-2 shadow-sm text-xs sm:text-sm ${
+                  <div className={`max-w-[85%] sm:max-w-[75%] rounded-2xl px-3 sm:px-4 py-2 shadow-sm ${
                     msg.role === 'user' 
                       ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-br-none' 
                       : 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-bl-none border border-gray-200 dark:border-gray-700'
                   }`}>
-                    <div className="whitespace-pre-wrap break-words">
+                    <div className="whitespace-pre-wrap text-xs sm:text-sm">
                       {msg.content.split('\n').map((line, i) => (
                         <p key={i} className={line.startsWith('[Archivo adjunto:') ? 'text-[10px] sm:text-xs italic opacity-80 mt-1' : ''}>
                           {line}
                         </p>
                       ))}
                     </div>
-                    <span className="text-[9px] sm:text-[10px] opacity-70 mt-1 block text-right">
+                    <span className="text-[8px] sm:text-[10px] opacity-70 mt-1 block text-right">
                       {new Date().toLocaleTimeString([], { hour: '2-digit', minute:'2-digit' })}
                     </span>
                   </div>
                   {msg.role === 'user' && (
                     <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center flex-shrink-0">
-                      <User size={14} className="sm:size-16 text-gray-600 dark:text-gray-300" />
+                      <User size={14} className="text-gray-600 dark:text-gray-300" />
                     </div>
                   )}
                 </motion.div>
@@ -300,9 +285,9 @@ const ChatIA = () => {
               {loading && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex gap-2 sm:gap-3 justify-start">
                   <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center animate-pulse">
-                    <Bot size={14} className="sm:size-16 text-white" />
+                    <Bot size={14} className="text-white" />
                   </div>
-                  <div className="bg-white dark:bg-gray-800 rounded-2xl px-3 sm:px-4 py-1.5 sm:py-2 rounded-bl-none shadow-sm">
+                  <div className="bg-white dark:bg-gray-800 rounded-2xl px-3 sm:px-4 py-2 rounded-bl-none shadow-sm">
                     <div className="flex gap-1">
                       <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-gray-400 rounded-full animate-bounce"></span>
                       <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-gray-400 rounded-full animate-bounce delay-100"></span>
@@ -317,13 +302,13 @@ const ChatIA = () => {
 
           <div className="p-3 sm:p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/50">
             {selectedFile && (
-              <div className="mb-2 sm:mb-3 p-1.5 sm:p-2 bg-purple-50 dark:bg-purple-900/20 rounded-lg flex items-center justify-between">
-                <div className="flex items-center gap-1.5 sm:gap-2">
-                  <FileText size={12} className="sm:size-14 text-purple-600" />
-                  <span className="text-[10px] sm:text-sm truncate max-w-[150px] sm:max-w-[200px]">{selectedFile.name}</span>
-                  <span className="text-[9px] sm:text-xs text-gray-500">({(selectedFile.size / 1024).toFixed(2)} KB)</span>
+              <div className="mb-2 sm:mb-3 p-2 bg-purple-50 dark:bg-purple-900/20 rounded-lg flex items-center justify-between">
+                <div className="flex items-center gap-2 max-w-[80%]">
+                  <FileText size={14} className="text-purple-600 flex-shrink-0" />
+                  <span className="text-xs truncate">{selectedFile.name}</span>
+                  <span className="text-[10px] text-gray-500 hidden sm:inline">({(selectedFile.size / 1024).toFixed(2)} KB)</span>
                 </div>
-                <button onClick={removeFile} className="p-0.5 sm:p-1 rounded hover:bg-purple-200 dark:hover:bg-purple-800/50">
+                <button onClick={removeFile} className="p-1 rounded hover:bg-purple-200 dark:hover:bg-purple-800/50">
                   <X size={12} />
                 </button>
               </div>
@@ -335,7 +320,7 @@ const ChatIA = () => {
                 onChange={(e) => setInput(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && !loading && handleSend()}
                 placeholder="Consulta sobre contratos, riesgos o normativa..."
-                className="flex-1 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-900 focus:ring-2 focus:ring-purple-500/50 focus:outline-none transition text-xs sm:text-sm"
+                className="flex-1 px-3 sm:px-4 py-2 rounded-full text-sm border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-900 focus:ring-2 focus:ring-purple-500/50 focus:outline-none transition"
               />
               <input
                 type="file"
@@ -343,19 +328,19 @@ const ChatIA = () => {
                 onChange={handleFileChange}
                 ref={fileInputRef}
                 className="hidden"
-                id="pdf-upload-chat"
+                id="pdf-upload"
               />
               <label
-                htmlFor="pdf-upload-chat"
-                className="p-1.5 sm:p-2 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 cursor-pointer transition flex items-center justify-center"
+                htmlFor="pdf-upload"
+                className="p-2 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 cursor-pointer transition flex items-center justify-center"
               >
-                <Paperclip size={14} className="sm:size-16" />
+                <Paperclip size={16} />
               </label>
-              <Button onClick={handleSend} disabled={loading} className="rounded-full p-1.5 sm:p-2 btn-primary">
-                <Send size={14} className="sm:size-16" />
+              <Button onClick={handleSend} disabled={loading} className="rounded-full p-2 btn-primary">
+                <Send size={16} />
               </Button>
             </div>
-            <p className="text-[9px] sm:text-xs text-gray-400 text-center mt-2">Adjunta PDF (solo visual, no se envía al backend)</p>
+            <p className="text-[10px] sm:text-xs text-gray-400 text-center mt-2">Adjunta PDF (solo visual, no se envía al backend)</p>
           </div>
         </Card>
       </div>
