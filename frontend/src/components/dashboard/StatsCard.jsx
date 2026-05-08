@@ -16,15 +16,17 @@ export const StatsCard = ({ title, value, iconName, color = 'purple' }) => {
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       whileHover={{ y: -5 }}
-      className="glass-card rounded-xl p-5 hover:shadow-xl transition-all border border-purple-500/20"
+      className="glass-card rounded-xl p-4 sm:p-5 hover:shadow-xl transition-all border border-purple-500/20"
     >
       <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{title}</p>
-          <p className="text-3xl font-bold mt-1 text-gray-800 dark:text-white">{value}</p>
+        <div className="min-w-0 flex-1">
+          <p className="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400 truncate">{title}</p>
+          <p className="text-xl sm:text-2xl md:text-3xl font-bold mt-1 text-gray-800 dark:text-white break-words">
+            {value}
+          </p>
         </div>
-        <div className={`p-3 rounded-full ${colorClasses[color]}`}>
-          <Icon name={iconName} size={24} />
+        <div className={`p-2 sm:p-3 rounded-full ${colorClasses[color]} flex-shrink-0 ml-3`}>
+          <Icon name={iconName} size={20} sm:size={24} />
         </div>
       </div>
       <div className="mt-3 h-1 w-full bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
