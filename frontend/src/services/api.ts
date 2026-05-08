@@ -347,21 +347,85 @@ export const fetchRedFlagsSummary =
 
 // CHAT IA
 
-export const sendChatMessage =
-  async (
-    message: string
-  ): Promise<{ reply: string }> => {
+export interface ChatMessageRequest{
+  pregunta:string;
+  sesion_id?:number;
+  contrato_id?:string|null;
+  ruta_pdf?:string|null;
+}
 
-    const response =
-      await api.post(
-        '/chat',
-        {
-          pregunta: message
-        }
-      );
+export interface ChatMessageResponse{
+  pregunta:string;
+  respuesta:string;
+}
 
-    return {
-      reply:
-        response.respuesta
-    };
+export const sendChatMessage=async(
+  data:ChatMessageRequest
+):Promise<ChatMessageResponse>=>{
+
+  return await api.post(
+    '/chat',
+    data
+  );
 };
+
+export const uploadPdf = async (
+  file: File
+): Promise<{ ruta_pdf: string }> => {
+
+  const formData = new FormData();
+
+  formData.append(
+    'file',
+    file
+  );
+
+  const response = await fetch(
+    'http://127.0.0.1:8000/chat/upload-pdf',
+    {
+      method:'POST',
+      body:formData
+    }
+  );
+
+  return await response.json();
+};
+
+export interface ChatSession{
+  id:number;
+  titulo:string;
+  fecha:string;
+}
+
+export interface ChatMessage{
+  role:string;
+  content:string;
+  fecha:string;
+}
+// chat de sesionespecifica
+export const createChatSession=async()=>{
+
+  return await api.post(
+    '/chat/session',
+    {}
+  );
+};
+// listar sesiones de chat
+export const getChatSessions=async():
+Promise<ChatSession[]>=>{
+
+  return await api.get(
+    '/chat/sessions'
+  );
+};
+// listar mensajes de una sesion de chat
+export const getChatMessages=async(
+  sesionId:number
+):Promise<ChatMessage[]>=>{
+
+  return await api.get(
+    `/chat/messages/${sesionId}`
+  );
+};
+
+

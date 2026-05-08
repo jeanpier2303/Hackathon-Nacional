@@ -4,10 +4,9 @@ from app.database.connection import (
     SessionLocal
 )
 
-from app.services.secop_import_service import (
+from app.services.secop.secop_import_service import (
     import_contracts
 )
-
 router = APIRouter()
 
 

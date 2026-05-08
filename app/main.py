@@ -2,7 +2,7 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import os
 
-from app.services.secop_service import get_contracts
+from app.services.secop.secop_service import get_contracts
 from app.services.ai_service import analizar_contrato, analizar_texto
 from app.services.pdf_service import extraer_texto_pdf
 from app.services.pdf_service import extraer_datos_inteligentes
@@ -10,6 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.routers.import_routes import router as import_router
 from app.routers.contracts_router import router as contracts_router
 from app.routers.import_routes import router as import_router
+from app.routers.chat_router import router as chat_router
 
 # chat service
 from app.services.chat_service import (
@@ -23,6 +24,7 @@ app = FastAPI()
 app.include_router(import_router)
 app.include_router(contracts_router)
 app.include_router(import_router)
+app.include_router(chat_router)
 
 app.add_middleware(
     CORSMiddleware,

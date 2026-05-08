@@ -10,3 +10,5 @@ sqlalchemy
 pymysql
 requests
 python-dotenv
+
+python-multipart==0.0.9
