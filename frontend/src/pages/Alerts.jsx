@@ -2,18 +2,19 @@ import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Bell, AlertTriangle, CheckCircle, Calendar, 
-  X, Eye, EyeOff, BarChart3
+  X, Eye, EyeOff, BarChart3,
+  ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight
 } from 'lucide-react';
 import { Card } from '../components/common/Card';
 import { Button } from '../components/common/Button';
 import { useNotifications } from '../hooks/useNotifications';
 import { useModal } from '../contexts/ModalContext';
 import { 
-  PieChart, Pie, Cell, Tooltip, ResponsiveContainer,
-  BarChart, Bar, XAxis, YAxis
+  PieChart, Pie, Cell, Tooltip, ResponsiveContainer
 } from 'recharts';
 
 const COLORS = ['#8B5CF6', '#EF4444', '#F59E0B', '#06B6D4', '#10B981'];
+const ITEMS_PER_PAGE = 10;
 
 const Alerts = () => {
   const { notifications, unreadCount, markAsRead, loading } = useNotifications();
@@ -23,6 +24,7 @@ const Alerts = () => {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [showStats, setShowStats] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Filtrar alertas
   const filteredAlerts = useMemo(() => {
@@ -56,7 +58,20 @@ const Alerts = () => {
     return filtered;
   }, [notifications, filterType, searchTerm, startDate, endDate]);
 
-  // Datos para gráfico de distribución
+  // Paginación
+  const totalPages = Math.ceil(filteredAlerts.length / ITEMS_PER_PAGE);
+  const paginatedAlerts = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    const end = start + ITEMS_PER_PAGE;
+    return filteredAlerts.slice(start, end);
+  }, [filteredAlerts, currentPage]);
+
+  // Resetear página cuando cambian los filtros
+  useMemo(() => {
+    setCurrentPage(1);
+  }, [filterType, searchTerm, startDate, endDate]);
+
+  // Datos para gráfico
   const chartData = useMemo(() => {
     const typeCount = {
       'Alto riesgo': notifications.filter(a => a.type === 'high_risk').length,
@@ -76,6 +91,7 @@ const Alerts = () => {
     setSearchTerm('');
     setStartDate('');
     setEndDate('');
+    setCurrentPage(1);
   };
 
   if (loading) {
@@ -107,7 +123,7 @@ const Alerts = () => {
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-      {/* Header */}
+      {/* Encabezado */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="flex gap-2">
           <Button onClick={markAllAsRead} variant="outline" disabled={unreadCount === 0}>
@@ -141,11 +157,11 @@ const Alerts = () => {
         </Card>
       </div>
 
-      {/* Gráfico */}
+      {/* Gráfico de distribución */}
       {chartData.length > 0 && (
         <Card className="p-4">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="font-semibold flex items-center gap-2">
+            <h3 className="font-semibold flex items-center gap-2 text-sm sm:text-base">
               <BarChart3 size={18} /> Distribución por tipo de alerta
             </h3>
             <button onClick={() => setShowStats(!showStats)} className="text-gray-500 text-sm">
@@ -188,7 +204,7 @@ const Alerts = () => {
             <Button variant={filterType === 'flag' ? 'primary' : 'outline'} onClick={() => setFilterType('flag')} size="sm">Otras alertas</Button>
           </div>
           <div className="flex flex-wrap gap-2">
-            <input type="text" placeholder="Buscar..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="px-3 py-1.5 text-sm border rounded-lg dark:bg-gray-800" />
+            <input type="text" placeholder="Buscar..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="px-3 py-1.5 text-sm border rounded-lg dark:bg-gray-800 w-full sm:w-auto" />
             <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="px-3 py-1.5 text-sm border rounded-lg dark:bg-gray-800" />
             <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="px-3 py-1.5 text-sm border rounded-lg dark:bg-gray-800" />
             <Button onClick={clearFilters} variant="outline" size="sm"><X size={14} className="mr-1" /> Limpiar</Button>
@@ -196,17 +212,17 @@ const Alerts = () => {
         </div>
       </Card>
 
-      {/* Lista de alertas */}
+      {/* Lista de alertas paginada */}
       <Card className="p-0 overflow-hidden">
         <div className="divide-y divide-gray-200 dark:divide-gray-800">
           <AnimatePresence>
-            {filteredAlerts.length === 0 ? (
+            {paginatedAlerts.length === 0 ? (
               <div className="p-10 text-center text-gray-500">
                 <Bell className="mx-auto mb-3 opacity-30" size={48} />
                 <p>No hay alertas con los filtros seleccionados.</p>
               </div>
             ) : (
-              filteredAlerts.map((alert, idx) => (
+              paginatedAlerts.map((alert, idx) => (
                 <motion.div
                   key={alert.id}
                   initial={{ opacity: 0, y: 10 }}
@@ -242,6 +258,47 @@ const Alerts = () => {
             )}
           </AnimatePresence>
         </div>
+
+        {/* Paginación */}
+        {totalPages > 1 && (
+          <div className="flex flex-wrap justify-center items-center gap-2 p-4 border-t bg-gray-50/30 dark:bg-gray-800/20">
+            <button
+              onClick={() => setCurrentPage(1)}
+              disabled={currentPage === 1}
+              className="p-2 rounded-lg border disabled:opacity-40 hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+              aria-label="Primera página"
+            >
+              <ChevronsLeft size={16} />
+            </button>
+            <button
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="p-2 rounded-lg border disabled:opacity-40 hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+              aria-label="Página anterior"
+            >
+              <ChevronLeft size={16} />
+            </button>
+            <span className="text-sm whitespace-nowrap">
+              Página {currentPage} de {totalPages}
+            </span>
+            <button
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className="p-2 rounded-lg border disabled:opacity-40 hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+              aria-label="Página siguiente"
+            >
+              <ChevronRight size={16} />
+            </button>
+            <button
+              onClick={() => setCurrentPage(totalPages)}
+              disabled={currentPage === totalPages}
+              className="p-2 rounded-lg border disabled:opacity-40 hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+              aria-label="Última página"
+            >
+              <ChevronsRight size={16} />
+            </button>
+          </div>
+        )}
       </Card>
     </motion.div>
   );
