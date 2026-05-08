@@ -42,11 +42,6 @@ const Sidebar = ({ collapsed = false }) => {
           </NavLink>
         ))}
       </nav>
-      {!collapsed && (
-        <div className="absolute bottom-4 left-4 right-4 text-xs text-center text-gray-400 border-t border-gray-200 dark:border-gray-800 pt-4">
-          v2.0 · IA Anticorrupción
-        </div>
-      )}
     </motion.aside>
   );
 };

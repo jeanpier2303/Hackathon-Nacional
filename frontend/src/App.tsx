@@ -11,6 +11,8 @@ import ContractDetail from './pages/ContractDetail';
 import ChatIA from './pages/ChatIA';
 import NotFound from './pages/NotFound';
 import Layout from './components/layout/Layout';
+import Alerts from './pages/Alerts';
+import Reports from './pages/Reports';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
@@ -60,6 +62,26 @@ function AppRoutes() {
             <ProtectedRoute>
               <Layout>
                 <ChatIA />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/alerts"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <Alerts />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/reports"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <Reports />
               </Layout>
             </ProtectedRoute>
           }
