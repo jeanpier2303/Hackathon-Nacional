@@ -136,7 +136,9 @@ def listar_contratos(
 
         contratos = (
             query
-            .order_by(Contrato.id.desc())
+            .order_by(
+                AnalisisIA.id.desc()
+            )
             .offset(offset)
             .limit(limit)
             .all()

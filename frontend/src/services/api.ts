@@ -381,24 +381,23 @@ export const analizarContrato = async (contratoId: string): Promise<any> => {
 
 
 // DASHBOARD
-
 export const fetchRedFlagsSummary =
   async (): Promise<RedFlagsSummary> => {
 
     const response =
-      await api.get(
-        '/contracts?limit=100'
-      );
+      await fetchContracts({
+        limit:1000
+      });
 
     const contracts =
-  response.data.map(normalizeContract);
+      response.data;
 
     const totalContracts =
       contracts.length;
 
     const totalRedFlags =
       contracts.reduce(
-        (acc: number, c: Contract) =>
+        (acc:number, c:Contract)=>
           acc + c.flags.length,
         0
       );
@@ -409,9 +408,9 @@ export const fetchRedFlagsSummary =
 
             contracts.reduce(
               (
-                acc: number,
-                c: Contract
-              ) =>
+                acc:number,
+                c:Contract
+              )=>
                 acc + c.riskScore,
               0
             ) / totalContracts
@@ -421,9 +420,27 @@ export const fetchRedFlagsSummary =
 
     const highRiskCount =
       contracts.filter(
-        (c: Contract) =>
+        (c:Contract)=>
           c.riskScore >= 70
       ).length;
+
+    // DISTRIBUCION REAL
+
+    const flagsDistribution:
+      Record<string, number> = {};
+
+    contracts.forEach(
+      (contract:Contract)=>{
+
+        contract.flags.forEach(
+          (flag:string)=>{
+
+            flagsDistribution[flag] =
+              (flagsDistribution[flag] || 0) + 1;
+          }
+        );
+      }
+    );
 
     return {
 
@@ -434,9 +451,8 @@ export const fetchRedFlagsSummary =
       avgRiskScore,
 
       highRiskCount,
-      
 
-      flagsDistribution: {}
+      flagsDistribution
     };
 };
 
