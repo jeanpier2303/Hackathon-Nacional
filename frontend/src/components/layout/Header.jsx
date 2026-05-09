@@ -1,18 +1,23 @@
 import { useState, useEffect, useRef } from 'react';
-import { LogOut, Moon, Sun, Bell, Menu, X } from 'lucide-react';
+import { LogOut, Moon, Sun, Bell, Menu, X, Mail } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useNotifications } from '../../hooks/useNotifications';
 import { useModal } from '../../contexts/ModalContext';
 import { Button } from '../common/Button';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
+import { useEmailHistory } from '../../hooks/useEmailHistory';
+import EmailHistoryPanel from './EmailHistoryPanel';
 
 const Header = ({ onMenuClick, sidebarCollapsed }) => {
   const { user, logout } = useAuth();
   const { notifications, unreadCount, markAsRead } = useNotifications();
   const { openContractModal } = useModal();
+  const { emails: emailEmails, unreadCount: emailUnreadCount, markAsRead: markEmailAsRead, markAllAsRead: markAllEmailsAsRead } = useEmailHistory();
   const [darkMode, setDarkMode] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
-  const dropdownRef = useRef(null);
+  const [emailPanelOpen, setEmailPanelOpen] = useState(false);
+  const notificationsRef = useRef(null);
+  const emailPanelRef = useRef(null);
   const isMobile = useMediaQuery('(max-width: 768px)');
 
   // Tema oscuro
@@ -33,8 +38,11 @@ const Header = ({ onMenuClick, sidebarCollapsed }) => {
   // Cerrar notificaciones al hacer clic fuera
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+      if (notificationsRef.current && !notificationsRef.current.contains(event.target)) {
         setNotificationsOpen(false);
+      }
+      if (emailPanelRef.current && !emailPanelRef.current.contains(event.target)) {
+        setEmailPanelOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -51,10 +59,8 @@ const Header = ({ onMenuClick, sidebarCollapsed }) => {
     ? "../../../src/assets/logo-blanc.png" 
     : "../../../src/assets/logo-oscuro.png";
 
-  // Cerrar menú lateral en móvil si se abre automáticamente
   const handleMenuClick = () => {
     onMenuClick();
-    // En móvil, si se abre el menú, se puede cerrar con el mismo botón
   };
 
   return (
@@ -79,8 +85,35 @@ const Header = ({ onMenuClick, sidebarCollapsed }) => {
 
         {/* Acciones derecha */}
         <div className="flex items-center gap-1 sm:gap-2 md:gap-4">
+          {/* historial de correos */}
+          <div className="relative" ref={emailPanelRef}>
+            <button
+              onClick={() => setEmailPanelOpen(!emailPanelOpen)}
+              className="relative p-1.5 sm:p-2 rounded-full hover:bg-gray-200/50 dark:hover:bg-gray-800/50 transition"
+              aria-label="Correos enviados"
+            >
+              <Mail size={isMobile ? 16 : 20} className="text-gray-600 dark:text-gray-300" />
+              {emailUnreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-blue-500 text-white text-[10px] leading-none rounded-full flex items-center justify-center px-1 animate-pulse">
+                  {emailUnreadCount > 9 ? '9+' : emailUnreadCount}
+                </span>
+              )}
+            </button>
+            {emailPanelOpen && (
+              <div className="absolute right-0 mt-2 z-50">
+                <EmailHistoryPanel
+                  emails={emailEmails}
+                  unreadCount={emailUnreadCount}
+                  markAsRead={markEmailAsRead}
+                  markAllAsRead={markAllEmailsAsRead}
+                  onClose={() => setEmailPanelOpen(false)}
+                />
+              </div>
+            )}
+          </div>
+
           {/* Notificaciones */}
-          <div className="relative" ref={dropdownRef}>
+          <div className="relative" ref={notificationsRef}>
             <button
               onClick={() => setNotificationsOpen(!notificationsOpen)}
               className="relative p-1.5 sm:p-2 rounded-full hover:bg-gray-200/50 dark:hover:bg-gray-800/50 transition"
@@ -94,7 +127,6 @@ const Header = ({ onMenuClick, sidebarCollapsed }) => {
               )}
             </button>
 
-            {/* Panel de notificaciones responsive */}
             {notificationsOpen && (
               <div className="fixed right-2 sm:right-0 top-14 sm:top-16 w-[calc(100vw-1rem)] sm:w-96 max-w-sm bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 z-50 overflow-hidden max-h-[70vh] flex flex-col">
                 <div className="p-3 border-b border-gray-200 dark:border-gray-700 font-semibold text-gray-800 dark:text-white sticky top-0 bg-white dark:bg-gray-800">
